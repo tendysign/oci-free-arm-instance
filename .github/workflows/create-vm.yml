@@ -43,14 +43,14 @@ jobs:
           echo "key_file=~/.oci/oci_api_key.pem" >> ~/.oci/config
           echo "region=ap-tokyo-1" >> ~/.oci/config
 
-          # ⚠️ 这里必须换成你自己的 SSH 公钥！
+          # ⚠️ 必须换成你自己的 SSH 公钥！
           echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCONmTQDZ8Ty93z9NtUdDIM5fRSGgexYUB5i5ZeR/ZSydpaWb+vdUEHZkp3vKE3LDXSdbWNMHqaENbQU5pnKl6mTnraiomhWVQojScw5pnKxv/f8XqzMx55CFKd4zBQNSK5sn3MJrKFLJQhxlz8tpX6gf81LBdlraOkgURmoBa4IBK+rWZ1Z6KQMavwqPRJIDqgCxXg4uD83BI7Yy7e8xl7vwXyOxpgadBYaOieAEL1jI4mgPqfX4f74q5tyPkXaziQcu4qDQ2ixS3ch5L4l5TN5FhJeFKbl4uRJYpO2FJN0A0WVvHh1WPQH+dhIyQCXrVKFP8mrfMo5klcGUqVD9q9 ssh-key-2026-09-02" > /home/runner/my_ssh_key.pub
 
-          # 使用填在 Secrets 里的子网 ID
+          # 直接手动指定子网 ID（调用之前填好的 Secret）
           SUBNET_ID="${{ secrets.OCI_SUBNET_ID }}"
           echo "使用的子网 ID: $SUBNET_ID"
 
-          # 自动寻找当前区域最新的 Ubuntu 22.04 ARM 镜像
+          # 自动寻找 Ubuntu 22.04 ARM 镜像
           echo "正在寻找 Ubuntu 22.04 ARM 镜像..."
           IMAGE_ID=$(oci compute image list --compartment-id "${{ secrets.OCI_TENANCY }}" \
             --operating-system "Canonical Ubuntu" \
