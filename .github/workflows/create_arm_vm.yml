@@ -29,24 +29,25 @@ jobs:
       - name: Attempt to Create ARM VM
         continue-on-error: true
         run: |
+          # ⚠️ 这里填你真实的 SSH 公钥 (我根据你之前的日志已经帮你填好了，如果换了请务必替换)
           echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCONmTQDZ8Ty93z9NtUdDIM5fRSGgexYUB5i5ZeR/ZSydpaWb+vdUEHZkp3vKE3LDXSdbWNMHqaENbQU5pnKl6mTnraiomhWVQojScw5pnKxv/f8XqzMx55CFKd4zBQNSK5sn3MJrKFLJQhxlz8tpX6gf81LBdlraOkgURmoBa4IBK+rWZ1Z6KQMavwqPRJIDqgCxXg4uD83BI7Yy7e8xl7vwXyOxpgadBYaOieAEL1jI4mgPqfX4f74q5tyPkXaziQcu4qDQ2ixS3ch5L4l5TN5FhJeFKbl4uRJYpO2FJN0A0WVvHh1WPQH+dhIyQCXrVKFP8mrfMo5klcGUqVD9q9 ssh-key-2026-09-02" > /home/runner/my_ssh_key.pub
           
-          echo "开始尝试创建..."
+          echo "开始尝试创建 ARM 实例..."
           OCI_OUTPUT=$(oci compute instance launch \
             --compartment-id "${{ secrets.OCI_CLI_TENANCY }}" \
             --availability-domain "YZYR:AP-TOKYO-1-AD-1" \
             --shape "VM.Standard.A1.Flex" \
             --shape-config '{"ocpus":2,"memoryInGBs":12}' \
             --subnet-id "${{ env.SUBNET_ID }}" \
-            --image-id "ocid1.image.oc1.ap-tokyo-1.aaaaaaaa5a3xwkk5vaichk47fms2uzvsqeriats2uorf6kwgq3l3nwrbhipa" \
+            --image-id "ocid1.image.oc1.ap-tokyo-1.aaaaaaaahnv6jnvldedz3pafjeoulkqk7x4jvackhx6nikhfyjwjsdrmy3pq" \
             --ssh-authorized-keys-file "/home/runner/my_ssh_key.pub" \
             --assign-public-ip true \
             --display-name "ubuntu-vm" \
             --boot-volume-size-in-gbs 100 2>&1 || true)
 
-          echo "===== 以下是 Oracle 返回的真实结果 ====="
+          echo "===== Oracle 返回的真实结果 ====="
           echo "$OCI_OUTPUT"
-          echo "========================================"
+          echo "================================="
 
           if echo "$OCI_OUTPUT" | grep -q '"lifecycle-state": "PROVISIONING"'; then
             echo "Success! 'PROVISIONING' state found in output."
