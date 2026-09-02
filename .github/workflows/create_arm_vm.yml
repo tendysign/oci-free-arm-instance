@@ -31,6 +31,7 @@ jobs:
         run: |
           echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCONmTQDZ8Ty93z9NtUdDIM5fRSGgexYUB5i5ZeR/ZSydpaWb+vdUEHZkp3vKE3LDXSdbWNMHqaENbQU5pnKl6mTnraiomhWVQojScw5pnKxv/f8XqzMx55CFKd4zBQNSK5sn3MJrKFLJQhxlz8tpX6gf81LBdlraOkgURmoBa4IBK+rWZ1Z6KQMavwqPRJIDqgCxXg4uD83BI7Yy7e8xl7vwXyOxpgadBYaOieAEL1jI4mgPqfX4f74q5tyPkXaziQcu4qDQ2ixS3ch5L4l5TN5FhJeFKbl4uRJYpO2FJN0A0WVvHh1WPQH+dhIyQCXrVKFP8mrfMo5klcGUqVD9q9 ssh-key-2026-09-02" > /home/runner/my_ssh_key.pub
           
+          echo "开始尝试创建..."
           OCI_OUTPUT=$(oci compute instance launch \
             --compartment-id "${{ secrets.OCI_CLI_TENANCY }}" \
             --availability-domain "AP-TOKYO-1-AD-1" \
@@ -43,9 +44,9 @@ jobs:
             --display-name "ubuntu-vm" \
             --boot-volume-size-in-gbs 100 2>&1 || true)
 
-          echo "log_data<<EOF" >> $GITHUB_OUTPUT
-          echo "$OCI_OUTPUT" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          echo "===== 以下是 Oracle 返回的真实结果 ====="
+          echo "$OCI_OUTPUT"
+          echo "========================================"
 
           if echo "$OCI_OUTPUT" | grep -q '"lifecycle-state": "PROVISIONING"'; then
             echo "Success! 'PROVISIONING' state found in output."
