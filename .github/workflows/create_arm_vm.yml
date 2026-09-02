@@ -1,0 +1,57 @@
+name: Create ARM VM
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+env:
+  OCI_CLI_REGION: "ap-tokyo-1"
+  OCI_CLI_USER: ${{ secrets.OCI_CLI_USER }}
+  OCI_CLI_TENANCY: ${{ secrets.OCI_CLI_TENANCY }}
+  OCI_CLI_FINGERPRINT: ${{ secrets.OCI_CLI_FINGERPRINT }}
+  OCI_CLI_KEY_CONTENT: ${{ secrets.OCI_CLI_KEY_CONTENT }}
+  SUBNET_ID: ${{ secrets.OCI_SUBNET_ID }}
+jobs:
+  create-instance:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure OCI
+        run: |
+          pip install oci-cli
+          mkdir -p ~/.oci
+          echo "${{ secrets.OCI_CLI_KEY_CONTENT }}" > ~/.oci/oci_api_key.pem
+          chmod 600 ~/.oci/oci_api_key.pem
+          echo "[DEFAULT]" > ~/.oci/config
+          echo "user=${{ secrets.OCI_CLI_USER }}" >> ~/.oci/config
+          echo "tenancy=${{ secrets.OCI_CLI_TENANCY }}" >> ~/.oci/config
+          echo "fingerprint=${{ secrets.OCI_CLI_FINGERPRINT }}" >> ~/.oci/config
+          echo "key_file=~/.oci/oci_api_key.pem" >> ~/.oci/config
+          echo "region=ap-tokyo-1" >> ~/.oci/config
+      - name: Attempt to Create ARM VM
+        continue-on-error: true
+        run: |
+          # ⚠️ 必须把这里替换成你自己的 SSH 公钥！
+          echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCONmTQDZ8Ty93z9NtUdDIM5fRSGgexYUB5i5ZeR/ZSydpaWb+vdUEHZkp3vKE3LDXSdbWNMHqaENbQU5pnKl6mTnraiomhWVQojScw5pnKxv/f8XqzMx55CFKd4zBQNSK5sn3MJrKFLJQhxlz8tpX6gf81LBdlraOkgURmoBa4IBK+rWZ1Z6KQMavwqPRJIDqgCxXg4uD83BI7Yy7e8xl7vwXyOxpgadBYaOieAEL1jI4mgPqfX4f74q5tyPkXaziQcu4qDQ2ixS3ch5L4l5TN5FhJeFKbl4uRJYpO2FJN0A0WVvHh1WPQH+dhIyQCXrVKFP8mrfMo5klcGUqVD9q9 ssh-key-2026-09-02" > /home/runner/my_ssh_key.pub
+          
+          OCI_OUTPUT=$(oci compute instance launch \
+            --compartment-id "${{ secrets.OCI_CLI_TENANCY }}" \
+            --availability-domain "AP-TOKYO-1-AD-1" \
+            --shape "VM.Standard.A1.Flex" \
+            --shape-config '{"ocpus":2,"memoryInGBs":12}' \
+            --subnet-id "${{ env.SUBNET_ID }}" \
+            --image-id "ocid1.image.oc1.ap-tokyo-1.aaaaaaaa5a3xwkk5vaichk47fms2uzvsqeriats2uorf6kwgq3l3nwrbhipa" \
+            --ssh-authorized-keys-file "/home/runner/my_ssh_key.pub" \
+            --assign-public-ip true \
+            --display-name "ubuntu-vm" \
+            --boot-volume-size-in-gbs 100 2>&1 || true)
+
+          echo "log_data<<EOF" >> $GITHUB_OUTPUT
+          echo "$OCI_OUTPUT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+          if echo "$OCI_OUTPUT" | grep -q '"lifecycle-state": "PROVISIONING"'; then
+            echo "Success! 'PROVISIONING' state found in output."
+            exit 0
+          else
+            echo "Error: Success string not found in OCI output. Failing the step."
+            exit 1
+          fi
