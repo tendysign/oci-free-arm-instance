@@ -34,7 +34,7 @@ jobs:
           echo "开始尝试创建..."
           OCI_OUTPUT=$(oci compute instance launch \
             --compartment-id "${{ secrets.OCI_CLI_TENANCY }}" \
-            --availability-domain "AP-TOKYO-1-AD-1" \
+            --availability-domain "YZYR:AP-TOKYO-1-AD-1" \
             --shape "VM.Standard.A1.Flex" \
             --shape-config '{"ocpus":2,"memoryInGBs":12}' \
             --subnet-id "${{ env.SUBNET_ID }}" \
