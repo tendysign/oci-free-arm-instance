@@ -28,11 +28,10 @@ jobs:
 
       - name: Setup OCI CLI and Try to Create VM
         id: create_vm
-        continue-on-error: true 
+        continue-on-error: true
         run: |
           set -o pipefail
           pip install oci-cli
-
           mkdir -p ~/.oci
           echo "${{ secrets.OCI_KEY }}" > ~/.oci/oci_api_key.pem
           chmod 600 ~/.oci/oci_api_key.pem
@@ -44,16 +43,21 @@ jobs:
           echo "key_file=~/.oci/oci_api_key.pem" >> ~/.oci/config
           echo "region=ap-tokyo-1" >> ~/.oci/config
 
-          # ⚠️ 注意：这里必须换成你自己的 SSH 公钥（以 ssh-rsa 开头，在本地电脑 .ssh 文件夹里找 id_rsa.pub）
-          echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQ...你的公钥..." > /home/runner/my_ssh_key.pub
+          # ⚠️ 这里必须换成你自己的 SSH 公钥！
+          echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCONmTQDZ8Ty93z9NtUdDIM5fRSGgexYUB5i5ZeR/ZSydpaWb+vdUEHZkp3vKE3LDXSdbWNMHqaENbQU5pnKl6mTnraiomhWVQojScw5pnKxv/f8XqzMx55CFKd4zBQNSK5sn3MJrKFLJQhxlz8tpX6gf81LBdlraOkgURmoBa4IBK+rWZ1Z6KQMavwqPRJIDqgCxXg4uD83BI7Yy7e8xl7vwXyOxpgadBYaOieAEL1jI4mgPqfX4f74q5tyPkXaziQcu4qDQ2ixS3ch5L4l5TN5FhJeFKbl4uRJYpO2FJN0A0WVvHh1WPQH+dhIyQCXrVKFP8mrfMo5klcGUqVD9q9 ssh-key-2026-09-02" > /home/runner/my_ssh_key.pub
 
-          # 尝试自动获取子网 OCID (不需要手动填)
-          echo "正在获取账号下的子网..."
-          SUBNET_ID=$(oci network subnet list --compartment-id "${{ secrets.OCI_TENANCY }}" --query "data[0].id" --raw-output)
-          echo "获取到的子网 ID: $SUBNET_ID"
+          # 使用填在 Secrets 里的子网 ID
+          SUBNET_ID="${{ secrets.OCI_SUBNET_ID }}"
+          echo "使用的子网 ID: $SUBNET_ID"
 
-          # 使用 Ubuntu 22.04 ARM 镜像
-          IMAGE_ID="ocid1.image.oc1.ap-tokyo-1.aaaaaaaawalj7g5gflqhx2he3p5o22culdbpgkbnddegrlupyqqf5vbt2wha"
+          # 自动寻找当前区域最新的 Ubuntu 22.04 ARM 镜像
+          echo "正在寻找 Ubuntu 22.04 ARM 镜像..."
+          IMAGE_ID=$(oci compute image list --compartment-id "${{ secrets.OCI_TENANCY }}" \
+            --operating-system "Canonical Ubuntu" \
+            --operating-system-version "22.04" \
+            --shape "VM.Standard.A1.Flex" \
+            --sort-by TIMECREATED --query "data[0].id" --raw-output 2>&1 || true)
+          echo "找到的镜像 ID: $IMAGE_ID"
 
           # 执行创建命令（标准免费额度 2 OCPU / 12 GB）
           OCI_OUTPUT=$(oci compute instance launch \
