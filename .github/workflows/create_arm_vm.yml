@@ -29,7 +29,6 @@ jobs:
       - name: Attempt to Create ARM VM
         continue-on-error: true
         run: |
-          # ⚠️ 必须把这里替换成你自己的 SSH 公钥！
           echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCONmTQDZ8Ty93z9NtUdDIM5fRSGgexYUB5i5ZeR/ZSydpaWb+vdUEHZkp3vKE3LDXSdbWNMHqaENbQU5pnKl6mTnraiomhWVQojScw5pnKxv/f8XqzMx55CFKd4zBQNSK5sn3MJrKFLJQhxlz8tpX6gf81LBdlraOkgURmoBa4IBK+rWZ1Z6KQMavwqPRJIDqgCxXg4uD83BI7Yy7e8xl7vwXyOxpgadBYaOieAEL1jI4mgPqfX4f74q5tyPkXaziQcu4qDQ2ixS3ch5L4l5TN5FhJeFKbl4uRJYpO2FJN0A0WVvHh1WPQH+dhIyQCXrVKFP8mrfMo5klcGUqVD9q9 ssh-key-2026-09-02" > /home/runner/my_ssh_key.pub
           
           OCI_OUTPUT=$(oci compute instance launch \
