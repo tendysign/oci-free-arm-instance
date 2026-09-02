@@ -1,17 +1,11 @@
 name: Try to Create OCI VM
-# 每 5 分钟自动尝试一次
+# 每 5 分钟尝试一次
 on:
   schedule:
     - cron: "*/5 * * * *"
   workflow_dispatch:
 
 env:
-  COMPARTMENT_ID: ${{ secrets.OCI_TENANCY }}
-  # 区域改为东京，镜像改为 Oracle Linux 9 (自动适应 ARM)
-  IMAGE_ID: "ocid1.image.oc1.ap-tokyo-1.aaaaaaaa5a3xwkk5vaichk47fms2uzvsqeriats2uorf6kwgq3l3nwrbhipa"
-  # 注意：依然需要子网 ID，请去 Oracle 网页复制你现有的子网 ID 填入 Secrets
-  SUBNET_ID: ${{ secrets.OCI_SUBNET_ID }}
-  AD_NAME: "AP-TOKYO-1-AD-1"
   OCI_CLI_REGION: "ap-tokyo-1"
   OCI_CLI_USER: ${{ secrets.OCI_USER }}
   OCI_CLI_TENANCY: ${{ secrets.OCI_TENANCY }}
@@ -38,9 +32,11 @@ jobs:
         run: |
           set -o pipefail
           pip install oci-cli
+
           mkdir -p ~/.oci
           echo "${{ secrets.OCI_KEY }}" > ~/.oci/oci_api_key.pem
           chmod 600 ~/.oci/oci_api_key.pem
+
           echo "[DEFAULT]" > ~/.oci/config
           echo "user=${{ secrets.OCI_USER }}" >> ~/.oci/config
           echo "tenancy=${{ secrets.OCI_TENANCY }}" >> ~/.oci/config
@@ -48,19 +44,28 @@ jobs:
           echo "key_file=~/.oci/oci_api_key.pem" >> ~/.oci/config
           echo "region=ap-tokyo-1" >> ~/.oci/config
 
-          # 这里填入你的 SSH 公钥！(必须是 ssh-rsa 开头)
-          echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQD...你的公钥..." > /home/runner/my_ssh_key.pub
+          # ⚠️ 注意：这里必须换成你自己的 SSH 公钥（以 ssh-rsa 开头，在本地电脑 .ssh 文件夹里找 id_rsa.pub）
+          echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQ...你的公钥..." > /home/runner/my_ssh_key.pub
 
+          # 尝试自动获取子网 OCID (不需要手动填)
+          echo "正在获取账号下的子网..."
+          SUBNET_ID=$(oci network subnet list --compartment-id "${{ secrets.OCI_TENANCY }}" --query "data[0].id" --raw-output)
+          echo "获取到的子网 ID: $SUBNET_ID"
+
+          # 使用 Ubuntu 22.04 ARM 镜像
+          IMAGE_ID="ocid1.image.oc1.ap-tokyo-1.aaaaaaaawalj7g5gflqhx2he3p5o22culdbpgkbnddegrlupyqqf5vbt2wha"
+
+          # 执行创建命令（标准免费额度 2 OCPU / 12 GB）
           OCI_OUTPUT=$(oci compute instance launch \
-            --compartment-id "$COMPARTMENT_ID" \
-            --availability-domain "$AD_NAME" \
+            --compartment-id "${{ secrets.OCI_TENANCY }}" \
+            --availability-domain "AP-TOKYO-1-AD-1" \
             --shape "VM.Standard.A1.Flex" \
             --shape-config '{"ocpus":2,"memoryInGBs":12}' \
             --subnet-id "$SUBNET_ID" \
             --image-id "$IMAGE_ID" \
             --ssh-authorized-keys-file "/home/runner/my_ssh_key.pub" \
             --assign-public-ip true \
-            --display-name "coolify-vm" \
+            --display-name "ubuntu-vm" \
             --boot-volume-size-in-gbs 100 2>&1 || true)
 
           echo "log_data<<EOF" >> $GITHUB_OUTPUT
